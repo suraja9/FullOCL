@@ -46,6 +46,8 @@ interface FloatingInputProps {
   disabled?: boolean;
   className?: string;
   disabledHoverDanger?: boolean; // when disabled, show red hover + not-allowed cursor
+  serviceabilityStatus?: 'available' | 'unavailable' | null; // New prop for inline status
+  showInlineStatus?: boolean; // Whether to show status inside input
 }
 
 const FloatingInput: React.FC<FloatingInputProps> = ({
@@ -58,11 +60,37 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
   icon,
   disabled = false,
   className = '',
-  disabledHoverDanger = false
+  disabledHoverDanger = false,
+  serviceabilityStatus = null,
+  showInlineStatus = false
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = value.length > 0;
   const shouldFloat = isFocused || hasValue;
+
+  // Determine status display
+  const getStatusDisplay = () => {
+    if (!showInlineStatus || !serviceabilityStatus) return null;
+    
+    if (serviceabilityStatus === 'available') {
+      return {
+        text: 'Available',
+        bgColor: 'bg-green-100',
+        textColor: 'text-green-700',
+        icon: <CheckCircle className="w-3 h-3" />
+      };
+    } else {
+      return {
+        text: 'Not Available', 
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-700',
+        icon: <XCircle className="w-3 h-3" />
+      };
+    }
+  };
+
+  const statusDisplay = getStatusDisplay();
+  const hasInlineStatus = showInlineStatus && serviceabilityStatus;
 
   return (
     <div className={`relative ${className} ${disabled && disabledHoverDanger ? 'group' : ''}`}>
@@ -81,7 +109,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
           maxLength={maxLength}
           disabled={disabled}
           className={`
-            w-full h-14 px-4 ${icon ? 'pl-12' : 'pl-4'} pr-4 
+            w-full h-14 px-4 ${icon ? 'pl-12' : 'pl-4'} ${hasInlineStatus ? 'pr-32' : 'pr-4'}
             border-2 rounded-lg bg-white
             transition-all duration-200 ease-in-out
             ${isFocused 
@@ -96,6 +124,17 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
           aria-disabled={disabled}
           title={disabled && disabledHoverDanger ? 'Origin pincode is Non - Serviceable' : undefined}
         />
+        
+        {/* Inline Status Display */}
+        {hasInlineStatus && statusDisplay && (
+          <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 z-10`}>
+            <div className={`flex items-center space-x-1 px-2 py-1 rounded-md text-xs font-medium ${statusDisplay.bgColor} ${statusDisplay.textColor}`}>
+              {statusDisplay.icon}
+              <span>{statusDisplay.text}</span>
+            </div>
+          </div>
+        )}
+        
         <label
           className={`
             absolute ${icon ? 'left-12' : 'left-4'} 
@@ -1586,37 +1625,29 @@ const BookingPanel: React.FC = () => {
                     maxLength={6}
                     required
                     icon={<MapPin className="w-4 h-4" />}
+                    serviceabilityStatus={originServiceable === null ? null : (originServiceable ? 'available' : 'unavailable')}
+                    showInlineStatus={true}
                   />
                   
-                  {originServiceable !== null && (
+                  {/* Show additional location info below for serviceable areas */}
+                  {originServiceable && originData.city && originData.state && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`mt-3 p-3 rounded-lg flex items-center space-x-2 text-sm ${
-                        originServiceable 
-                          ? 'bg-green-50 border border-green-200 text-green-700' 
-                          : 'bg-red-50 border border-red-200 text-red-700'
-                      }`}
+                      className="mt-2 text-xs text-gray-600 pl-12"
                     >
-                      {originServiceable ? (
-                        <>
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <div>
-                            <p className="font-medium">Serviceable</p>
-                            {originData.city && originData.state && (
-                              <p className="text-xs text-green-600 mt-1">{originData.city}, {originData.state}</p>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-5 h-5 text-red-600" />
-                          <div>
-                            <p className="font-medium">Non Serviceable Area</p>
-                            <p className="text-xs text-red-600 mt-1">Please try a different Pin Code or contact Customer Care</p>
-                          </div>
-                        </>
-                      )}
+                      <p>{originData.city}, {originData.state}</p>
+                    </motion.div>
+                  )}
+                  
+                  {/* Show error message only for non-serviceable areas */}
+                  {originServiceable === false && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-2 text-xs text-red-600 pl-12"
+                    >
+                      <p>Please try a different Pin Code or contact Customer Care</p>
                     </motion.div>
                   )}
                 </div>
@@ -1636,37 +1667,29 @@ const BookingPanel: React.FC = () => {
                     disabled={!originServiceable && originServiceable !== null}
                     disabledHoverDanger={!originServiceable && originServiceable !== null}
                     icon={<MapPin className="w-4 h-4" />}
+                    serviceabilityStatus={destinationServiceable === null ? null : (destinationServiceable ? 'available' : 'unavailable')}
+                    showInlineStatus={true}
                   />
                   
-                  {destinationServiceable !== null && (
+                  {/* Show additional location info below for serviceable areas */}
+                  {destinationServiceable && destinationData.city && destinationData.state && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`mt-3 p-3 rounded-lg flex items-center space-x-2 text-sm ${
-                        destinationServiceable 
-                          ? 'bg-green-50 border border-green-200 text-green-700' 
-                          : 'bg-red-50 border border-red-200 text-red-700'
-                      }`}
+                      className="mt-2 text-xs text-gray-600 pl-12"
                     >
-                      {destinationServiceable ? (
-                        <>
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <div>
-                            <p className="font-medium">Serviceable</p>
-                            {destinationData.city && destinationData.state && (
-                              <p className="text-xs text-green-600 mt-1">{destinationData.city}, {destinationData.state}</p>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-5 h-5 text-red-600" />
-                          <div>
-                            <p className="font-medium">Non Serviceable Area</p>
-                            <p className="text-xs text-red-600 mt-1">Please Try a Different Pin Code</p>
-                          </div>
-                        </>
-                      )}
+                      <p>{destinationData.city}, {destinationData.state}</p>
+                    </motion.div>
+                  )}
+                  
+                  {/* Show error message only for non-serviceable areas */}
+                  {destinationServiceable === false && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-2 text-xs text-red-600 pl-12"
+                    >
+                      <p>Please try a different Pin Code</p>
                     </motion.div>
                   )}
                 </div>
