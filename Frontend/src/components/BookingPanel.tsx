@@ -166,7 +166,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center space-x-1 justify-end pr-3"
             >
-              <div className="text-xs text-gray-600 bg-green-50 px-2 py-1 rounded border border-green-200">
+              <div className="text-xs text-black">
                 {addressInfo}
               </div>
             </motion.div>
