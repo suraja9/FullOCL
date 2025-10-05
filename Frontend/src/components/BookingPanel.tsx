@@ -48,6 +48,8 @@ interface FloatingInputProps {
   disabledHoverDanger?: boolean; // when disabled, show red hover + not-allowed cursor
   serviceabilityStatus?: 'available' | 'unavailable' | null; // New prop for inline status
   showInlineStatus?: boolean; // Whether to show status inside input
+  addressInfo?: string; // Address information to show below inline status
+  errorMessage?: string; // Error message to show for non-serviceable areas
 }
 
 const FloatingInput: React.FC<FloatingInputProps> = ({
@@ -62,7 +64,9 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
   className = '',
   disabledHoverDanger = false,
   serviceabilityStatus = null,
-  showInlineStatus = false
+  showInlineStatus = false,
+  addressInfo = '',
+  errorMessage = ''
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = value.length > 0;
@@ -151,6 +155,37 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
           {label}{required && <span className="text-red-500 ml-1">*</span>}
         </label>
       </div>
+      
+      {/* Address and Error Display Below Inline Status */}
+      {showInlineStatus && serviceabilityStatus && (
+        <div className="mt-1">
+          {/* Address Info for Available Status */}
+          {serviceabilityStatus === 'available' && addressInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center space-x-1 justify-end pr-3"
+            >
+              <div className="text-xs text-gray-600 bg-green-50 px-2 py-1 rounded border border-green-200">
+                {addressInfo}
+              </div>
+            </motion.div>
+          )}
+          
+          {/* Error Message for Unavailable Status */}
+          {serviceabilityStatus === 'unavailable' && errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center space-x-1 justify-end pr-3"
+            >
+              <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
+                {errorMessage}
+              </div>
+            </motion.div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -1627,29 +1662,9 @@ const BookingPanel: React.FC = () => {
                     icon={<MapPin className="w-4 h-4" />}
                     serviceabilityStatus={originServiceable === null ? null : (originServiceable ? 'available' : 'unavailable')}
                     showInlineStatus={true}
+                    addressInfo={originServiceable && originData.city && originData.state ? `${originData.city}, ${originData.state}` : ''}
+                    errorMessage={originServiceable === false ? 'Please try a different Pin Code or contact Customer Care' : ''}
                   />
-                  
-                  {/* Show additional location info below for serviceable areas */}
-                  {originServiceable && originData.city && originData.state && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-2 text-xs text-gray-600 pl-12"
-                    >
-                      <p>{originData.city}, {originData.state}</p>
-                    </motion.div>
-                  )}
-                  
-                  {/* Show error message only for non-serviceable areas */}
-                  {originServiceable === false && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-2 text-xs text-red-600 pl-12"
-                    >
-                      <p>Please try a different Pin Code or contact Customer Care</p>
-                    </motion.div>
-                  )}
                 </div>
 
                 <div className={`${!originServiceable && originServiceable !== null ? 'opacity-50' : ''}`}>
@@ -1669,29 +1684,9 @@ const BookingPanel: React.FC = () => {
                     icon={<MapPin className="w-4 h-4" />}
                     serviceabilityStatus={destinationServiceable === null ? null : (destinationServiceable ? 'available' : 'unavailable')}
                     showInlineStatus={true}
+                    addressInfo={destinationServiceable && destinationData.city && destinationData.state ? `${destinationData.city}, ${destinationData.state}` : ''}
+                    errorMessage={destinationServiceable === false ? 'Please try a different Pin Code' : ''}
                   />
-                  
-                  {/* Show additional location info below for serviceable areas */}
-                  {destinationServiceable && destinationData.city && destinationData.state && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-2 text-xs text-gray-600 pl-12"
-                    >
-                      <p>{destinationData.city}, {destinationData.state}</p>
-                    </motion.div>
-                  )}
-                  
-                  {/* Show error message only for non-serviceable areas */}
-                  {destinationServiceable === false && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-2 text-xs text-red-600 pl-12"
-                    >
-                      <p>Please try a different Pin Code</p>
-                    </motion.div>
-                  )}
                 </div>
 
                 {/* Success Message when both are serviceable */}
